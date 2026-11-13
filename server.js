@@ -48,6 +48,10 @@ function send(res, status, body, headers = {}) {
 }
 
 function readBody(req) {
+  // Vercel ランタイムが本文を解析済みの場合はそれを使う
+  if (req.readableEnded && req.body !== undefined) {
+    return Promise.resolve(Buffer.isBuffer(req.body) ? req.body : Buffer.from(typeof req.body === 'string' ? req.body : JSON.stringify(req.body)));
+  }
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
@@ -556,7 +560,7 @@ function serveStatic(req, res, pathname) {
 
 // ---------------------------------------------------------------------------
 
-const server = http.createServer(async (req, res) => {
+async function handler(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
   try {
@@ -581,6 +585,8 @@ const server = http.createServer(async (req, res) => {
         }
       }
       const db = store.load();
+      // サーバーレス環境では常駐タイマーが使えないため、リクエスト時にも回答期限を確認
+      wf.checkTimeouts(db);
       const result = await r.handler({ db, params, query: Object.fromEntries(url.searchParams), body, raw, req });
       store.save();
       return send(res, 200, result === undefined ? { ok: true } : result);
@@ -601,10 +607,12 @@ const server = http.createServer(async (req, res) => {
     store.save();
     return send(res, status, { error: e.message || 'サーバーエラー', detail: e.detail });
   }
-});
+}
 
-// 緊急募集の回答期限チェック（30 秒ごと）
-setInterval(() => {
+const server = http.createServer(handler);
+
+// 緊急募集の回答期限チェック（30 秒ごと・常駐サーバーのみ）
+if (!process.env.VERCEL) setInterval(() => {
   try {
     const db = store.load();
     if (wf.checkTimeouts(db) > 0) store.save();
@@ -621,4 +629,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server };
+module.exports = { server, handler };

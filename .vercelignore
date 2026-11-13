@@ -1,0 +1,7 @@
+data
+test
+docs
+.env
+.env.local
+.env.*.local
+.vercel

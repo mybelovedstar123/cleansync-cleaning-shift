@@ -5,7 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const FILE = process.env.DB_FILE || path.join(__dirname, '..', 'data', 'db.json');
+// Vercel（サーバーレス）は /tmp 以外が読み取り専用のため /tmp に保存（コールドスタートでデモデータを再生成）
+const FILE = process.env.DB_FILE || (process.env.VERCEL ? '/tmp/cleansync-db.json' : path.join(__dirname, '..', 'data', 'db.json'));
 
 let state = null;
 

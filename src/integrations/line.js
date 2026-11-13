@@ -17,7 +17,10 @@ function config() {
     secret: process.env.LINE_CHANNEL_SECRET || '',
     groupId: process.env.LINE_STAFF_GROUP_ID || '',
     adminIds: (process.env.LINE_ADMIN_USER_IDS || '').split(',').filter(Boolean),
-    baseUrl: process.env.PUBLIC_BASE_URL || 'http://localhost:3000',
+    baseUrl:
+      process.env.PUBLIC_BASE_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
+      'http://localhost:3000',
   };
 }
 
