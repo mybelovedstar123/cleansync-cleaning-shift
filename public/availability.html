@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>勤務不可日の提出</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/app.css" />
+  <style>
+    body { min-height: 100vh; display: flex; justify-content: center; }
+    .bgimg { position: fixed; inset: 0; background: url('/img/bg-availability.jpg') center/cover no-repeat; z-index: 0; }
+    .bgimg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,12,24,.5), rgba(8,12,24,.9) 55%); }
+    .wrap { position: relative; z-index: 1; width: min(520px, 100%); padding: 32px 16px 40px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .dpick button { font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="bgimg" aria-hidden="true"></div>
+  <div class="wrap">
+    <h1>勤務不可日の提出</h1>
+    <p class="muted small" id="lead">翌月の勤務できない日をタップして提出してください。</p>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field"><label>対象月</label><select class="input" id="month"></select></div>
+        <div class="field"><label>お名前</label><select class="input" id="staff"></select></div>
+      </div>
+      <p class="small muted" id="status" style="margin:12px 0 8px"></p>
+      <div id="dp"></div>
+      <div class="row mt"><span class="small muted" id="count"></span><span class="spacer"></span><button class="btn primary" id="submit">提出する</button></div>
+    </div>
+    <p class="small muted mt">※本番運用では LINE ログイン（LIFF）で本人を自動識別するため、名前の選択は不要になります。</p>
+  </div>
+  <script>
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const WD = '日月火水木金土';
+    const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+    const monthAdd = (m, n) => { const [y, mm] = m.split('-').map(Number); return new Date(Date.UTC(y, mm - 1 + n, 1)).toISOString().slice(0, 7); };
+    const params = new URLSearchParams(location.search);
+    let data = null;
+    let sel = new Set();
+
+    const mSel = document.getElementById('month');
+    const thisMonth = jstToday.slice(0, 7);
+    for (let i = 0; i <= 2; i++) {
+      const m = monthAdd(thisMonth, i);
+      mSel.insertAdjacentHTML('beforeend', `<option value="${m}">${m.replace('-', '年')}月</option>`);
+    }
+    mSel.value = params.get('month') || monthAdd(thisMonth, 2);
+
+    async function load() {
+      data = await (await fetch(`/api/availability/${mSel.value}`)).json();
+      const sSel = document.getElementById('staff');
+      const prev = sSel.value;
+      sSel.innerHTML = data.staff.map((s) => `<option value="${s.id}">${esc(s.name)}${s.submittedAt ? '（提出済）' : ''}</option>`).join('');
+      if (prev && data.staff.some((s) => s.id === prev)) sSel.value = prev;
+      document.getElementById('lead').textContent = `${data.month.replace('-', '年')}月分の締切は ${Number(data.deadline.slice(5, 7))}月${Number(data.deadline.slice(8))}日 です。${data.published ? '（この月はシフト確定済みのため、変更は管理者へ通知されます）' : ''}`;
+      pickStaff();
+    }
+
+    function pickStaff() {
+      const s = data.staff.find((x) => x.id === document.getElementById('staff').value);
+      sel = new Set(s ? s.dates : []);
+      document.getElementById('status').textContent = s && s.submittedAt ? `前回提出：${new Date(s.submittedAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}` : '未提出です';
+      render();
+    }
+
+    function render() {
+      const [y, m] = mSel.value.split('-').map(Number);
+      const n = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const pad = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+      let html = [...WD].map((w) => `<div class="wd">${w}</div>`).join('') + '<span></span>'.repeat(pad);
+      for (let d = 1; d <= n; d++) {
+        const ds = `${mSel.value}-${String(d).padStart(2, '0')}`;
+        html += `<button type="button" class="${sel.has(ds) ? 'on' : ''}" data-d="${ds}">${d}</button>`;
+      }
+      document.getElementById('dp').innerHTML = `<div class="dpick">${html}</div>`;
+      document.getElementById('count').textContent = `不可日 ${sel.size} 日`;
+    }
+
+    document.getElementById('dp').addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-d]');
+      if (!b) return;
+      sel.has(b.dataset.d) ? sel.delete(b.dataset.d) : sel.add(b.dataset.d);
+      render();
+    });
+    mSel.addEventListener('change', load);
+    document.getElementById('staff').addEventListener('change', pickStaff);
+    document.getElementById('submit').addEventListener('click', async () => {
+      const res = await fetch('/api/availability', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ staffId: document.getElementById('staff').value, month: mSel.value, dates: [...sel] }) });
+      const out = await res.json();
+      alert(res.ok ? `提出しました（${out.dates.length}日）${out.conflicts.length ? `\n※確定シフトと重なる日が ${out.conflicts.length} 件あります。管理者へ通知しました。` : ''}` : out.error);
+      load();
+    });
+    load();
+  </script>
+</body>
+</html>

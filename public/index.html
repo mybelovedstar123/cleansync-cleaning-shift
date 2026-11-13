@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CleanSync 清掃シフト自動化</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2338bdf8'/%3E%3Cpath d='M9 17l5 5 9-11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div id="bg" aria-hidden="true"><div class="bg-layer"></div><div class="bg-layer"></div><div class="bg-overlay"></div></div>
+
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">CleanSync</div>
+          <div class="brand-sub">一棟貸し 清掃シフト自動化</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="#/dashboard" data-view="dashboard"><span class="ico">◧</span>ダッシュボード</a>
+        <a href="#/reservations" data-view="reservations"><span class="ico">▤</span>予約一覧</a>
+        <a href="#/calendar" data-view="calendar"><span class="ico">▦</span>清掃カレンダー</a>
+        <a href="#/urgent" data-view="urgent"><span class="ico">⚑</span>緊急募集<span class="nav-badge" id="badge-urgent" hidden></span></a>
+        <a href="#/monthly" data-view="monthly"><span class="ico">◷</span>月次シフト</a>
+        <a href="#/fairness" data-view="fairness"><span class="ico">⚖</span>公平性管理</a>
+        <div class="nav-sep">マスタ</div>
+        <a href="#/staff" data-view="staff"><span class="ico">☺</span>清掃スタッフ</a>
+        <a href="#/properties" data-view="properties"><span class="ico">⌂</span>施設</a>
+        <div class="nav-sep">連携</div>
+        <a href="#/notifications" data-view="notifications"><span class="ico">✉</span>LINE 通知</a>
+        <a href="#/integrations" data-view="integrations"><span class="ico">⇄</span>AirHost・連携設定</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="clock" id="clock"></div>
+        <div class="mode-pill" id="mode-pill"></div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menu-btn" aria-label="メニュー">☰</button>
+        <div class="page-head">
+          <h1 id="page-title">ダッシュボード</h1>
+          <p id="page-sub"></p>
+        </div>
+        <div class="page-actions" id="page-actions"></div>
+      </header>
+      <main id="view" class="view" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div class="modal-root" id="modal-root" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h2 id="modal-title"></h2>
+        <button class="icon-btn" data-close aria-label="閉じる">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-foot" id="modal-foot"></div>
+    </div>
+  </div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="tooltip" id="tooltip" hidden></div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
