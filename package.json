@@ -1,0 +1,17 @@
+{
+  "name": "cleansync-cleaning-shift",
+  "version": "0.1.0",
+  "description": "一棟貸し宿泊施設向け 予約連動 清掃シフト自動割当・AirHost登録・LINE通知システム（デモ版）",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "reset": "node -e \"require('./src/db').reset(); console.log('demo data reset')\"",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
